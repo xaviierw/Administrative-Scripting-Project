@@ -1,0 +1,57 @@
+log_file_path = os.path.join(os.getcwd(), 'summary.log')
+logging.basicConfig(filename=log_file_path, level=logging.INFO,
+format='%(asctime)s %(name)s - %(levelname)s - %(message)s')
+
+def format_creation_date(creation_date):
+return creation_date.strftime('%Y%m')
+
+def encrypt_file(file_path, key):
+fernet = Fernet(key)
+with open(file_path, 'rb') as file:
+original_file_data = file.read()
+encrypted_data = fernet.encrypt(original_file_data)
+with open(file_path, 'wb') as file:
+file.write(encrypted_data)
+
+def create_encrypted_zip(files, archive_name, password, output_folder):
+key = Fernet.generate_key() # Generate a key for encryption
+fernet = Fernet(key)
+
+zip_path = os.path.join(output_folder, f'{archive_name}.zip')
+with ZipFile(zip_path, 'w') as zipf:
+    for file in files:
+        zipf.write(file, os.path.basename(file))
+        logging.info(f'{os.path.basename(file)} added to {archive_name}.zip')
+
+encrypt_file(zip_path, key)
+
+key_file = os.path.join(output_folder, f'{archive_name}_key.txt')
+with open(key_file, 'wb') as kf:
+    kf.write(key)
+
+logging.info(f'Archive created: {archive_name}.zip with encryption. Key saved to {archive_name}_key.txt')
+root_folder = 'C:\Users\Billy\PycharmProjects\StorageManagement'
+client_image_folder = os.path.join(root_folder, 'clientImage')
+client_text_folder = os.path.join(root_folder, 'clientText')
+client_clean_folder = os.path.join(root_folder, 'clientClean')
+
+os.makedirs(client_clean_folder, exist_ok=True)
+
+password = 'Xavier'
+
+files_to_zip = {}
+
+for folder_name in ['clientImage', 'clientText']:
+folder_path = os.path.join(root_folder, folder_name)
+for filename in os.listdir(folder_path):
+file_path = os.path.join(folder_path, filename)
+creation_time = datetime.datetime.fromtimestamp(os.path.getctime(file_path))
+formatted_date = format_creation_date(creation_time)
+archive_suffix = '-img' if folder_name == 'clientImage' else '-txt'
+archive_name = f'{formatted_date}{archive_suffix}'
+files_to_zip.setdefault(archive_name, []).append(file_path)
+
+for archive_name, files in files_to_zip.items():
+create_encrypted_zip(files, archive_name, password, client_clean_folder)
+
+logging.info("Archiving and encryption process is complete for all files.")
