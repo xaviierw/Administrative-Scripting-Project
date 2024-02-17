@@ -1,0 +1,53 @@
+def decrypt_and_unzip(encrypted_zip_path, key_path, output_folder):
+# Ensure the output directory exists
+if not os.path.exists(output_folder):
+os.makedirs(output_folder)
+
+# Read the key from the key file
+with open(key_path, 'rb') as key_file:
+    key = key_file.read()
+
+# Initialize Fernet with the key
+fernet = Fernet(key)
+
+# Read the encrypted zip content
+with open(encrypted_zip_path, 'rb') as encrypted_zip_file:
+    encrypted_data = encrypted_zip_file.read()
+
+# Decrypt the data
+decrypted_data = fernet.decrypt(encrypted_data)
+
+# Write the decrypted data to a temp zip file
+temp_zip_path = encrypted_zip_path + '.tmp'
+with open(temp_zip_path, 'wb') as temp_zip_file:
+    temp_zip_file.write(decrypted_data)
+
+# Extract the temp zip file
+with ZipFile(temp_zip_path, 'r') as zip_ref:
+    zip_ref.extractall(output_folder)
+
+# Clean up the temp zip file
+os.remove(temp_zip_path)
+client_clean_folder = 'clientClean'
+
+Names of the zip and key files
+img_zip_name = '202402-img.zip'
+img_key_name = '202402-img_key.txt'
+txt_zip_name = '202402-txt.zip'
+txt_key_name = '202402-txt_key.txt'
+
+Paths to the encrypted zip files and keys
+img_encrypted_zip_path = os.path.join(client_clean_folder, img_zip_name)
+img_key_path = os.path.join(client_clean_folder, img_key_name)
+txt_encrypted_zip_path = os.path.join(client_clean_folder, txt_zip_name)
+txt_key_path = os.path.join(client_clean_folder, txt_key_name)
+
+Output folders for decrypted content
+img_output_folder = os.path.join(client_clean_folder, 'img_decrypt')
+txt_output_folder = os.path.join(client_clean_folder, 'txt_decrypt')
+
+Decrypt and unzip image and text files separately
+decrypt_and_unzip(img_encrypted_zip_path, img_key_path, img_output_folder)
+decrypt_and_unzip(txt_encrypted_zip_path, txt_key_path, txt_output_folder)
+
+print("Decryption and extraction process is complete.")
