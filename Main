@@ -1,0 +1,337 @@
+import os
+import pyftpdlib
+import shutil
+import logging
+import datetime
+import zipfile
+import re
+import time
+from datetime import date
+from datetime import datetime
+from ftplib import FTP
+from cryptography.fernet import Fernet
+from zipfile import ZipFile, ZIP_DEFLATED
+from ftplib import FTP, error_perm
+from time import sleep
+
+#SEPERATOR (download files from FTP server)
+
+log_file_path = os.path.join(os.getcwd(), 'summary.txt')
+logging.basicConfig(filename=log_file_path, level=logging.INFO,
+                    format='%(asctime)s - xavier - %(levelname)s - %(message)s')
+
+def server_folder(ftp, folder, local_dir):
+    try:
+        os.makedirs(local_dir)
+    except OSError:
+        pass  # Ignore this exception
+
+    ftp.cwd(folder)
+    items = ftp.nlst()  # get items from ftp server
+
+    for item in items:
+        local_path = os.path.join(local_dir, item)
+        try:
+            if '.' in item:  # check for . extensions
+                with open(local_path, 'wb') as f:
+                    ftp.retrbinary('RETR ' + item, f.write)  #RETR is to retrieve a file from the FTP server;retrbinary is to retrieve a file from FTP server in binary mode
+
+            else:
+                server_folder(ftp, item, local_path)
+        except Exception as e:  # only print if file is unable to download from FTP to localhost
+            logging.error(f"Error downloading {item}: {e}")
+            logging.error(f"Error downloading files from FTP server {ftp.host()}")
+
+def write_summary_file():
+    current_time = datetime.now().strftime('%d/%m/%y %H:%M:%S')  # Date and time in specified format
+    logging.info("Downloading files from ftp server done.")
+
+  #FTP server credentials (login:password ftp-admin:admin)
+ftp_host = '127.0.0.1'
+ftp_user = 'ftp-admin'
+ftp_passwd = 'admin'
+ftp_folder = '/project_resource/resource/do_not_touch'  # Update the FTP folder path
+local_dir = os.path.join(os.getcwd(), 'history_a')
+
+try:
+    with FTP(ftp_host) as ftp:
+        ftp.login(ftp_user, ftp_passwd)  # Log in to FTP server using credentials above
+        server_folder(ftp, ftp_folder, local_dir)
+        write_summary_file()
+except Exception as e:  # Handle exceptions that occur during execution
+    logging.error(f"Error: {e}")
+
+##SEPERATOR (sort files based on extensions
+
+log_file_path = os.path.join(os.getcwd(), 'summary.txt')
+logging.basicConfig(filename=log_file_path, level=logging.INFO,
+                    format='%(asctime)s - xavier - %(levelname)s - %(message)s')
+
+def sort_files(source_dir, dest_img_dir, dest_txt_dir):
+    os.makedirs(dest_img_dir, exist_ok=True)
+    os.makedirs(dest_txt_dir, exist_ok=True)
+
+    img_extensions = ['.img', '.jpg', '.jpeg', '.jpe', '.jif', '.jfif', '.jfi', '.png', '.gif', '.bmp', '.dib', '.tiff',
+                      '.tif', '.tga', '.heif', '.heic', '.webp']
+    img_count = 0
+    txt_count = 0
+
+    for filename in os.listdir(source_dir):
+        src_file_path = os.path.join(source_dir, filename)
+        if os.path.isfile(src_file_path):
+            _, file_extension = os.path.splitext(filename)
+            if file_extension.lower() in img_extensions:
+                dest_file_path = os.path.join(dest_img_dir, filename)
+                shutil.move(src_file_path, dest_file_path)
+                img_count += 1
+            elif file_extension.lower() == '.txt':
+                dest_file_path = os.path.join(dest_txt_dir, filename)
+                shutil.move(src_file_path, dest_file_path)
+                txt_count += 1
+
+    logging.info("File sorting done.")
+
+source_dir = os.path.join(os.getcwd(), 'history_a')
+dest_img_dir = os.path.join(os.getcwd(), 'clientImage')
+dest_txt_dir = os.path.join(os.getcwd(), 'clientText')
+
+sort_files(source_dir, dest_img_dir, dest_txt_dir)
+
+#SEPERATOR (check for virus pattern)
+
+log_file_path = os.path.join(os.getcwd(), 'summary.txt')
+logging.basicConfig(filename=log_file_path, level=logging.INFO,
+                    format='%(asctime)s - xavier - %(levelname)s - %(message)s')
+
+def identify_virus_patterns(folder):
+    virus_pattern = re.compile(r'\b[A-Za-z]{2}\d{6}\b')
+    virus_files = []
+
+    for filename in os.listdir(folder):
+        file_path = os.path.join(folder, filename)
+        if os.path.isfile(file_path) and filename.endswith('.txt'):
+            with open(file_path, 'r') as file:
+                content = file.read()
+                matches = virus_pattern.findall(content)
+                if matches:
+                    # Log the file and the virus code identified
+                    logging.info(f"Virus identified in file: {filename} with code(s): {', '.join(matches)}")
+                    virus_files.append((filename, matches))
+
+    logging.info("Scan for virus done.")
+
+    return virus_files
+
+folder = r'C:\Users\Billy\PycharmProjects\StorageManagement\clientText'
+virus_folder = r'C:\Users\Billy\PycharmProjects\StorageManagement\virus'
+os.makedirs(virus_folder, exist_ok=True)
+
+virus_files = identify_virus_patterns(folder)
+
+for file, _ in virus_files:
+    src = os.path.join(folder, file)
+    dst = os.path.join(virus_folder, file)
+    shutil.move(src, dst)
+
+#SEPERATOR (encryption)
+
+import datetime
+
+log_file_path = os.path.join(os.getcwd(), 'summary.txt')
+logging.basicConfig(filename=log_file_path, level=logging.INFO,
+                    format='%(asctime)s - xavier - %(levelname)s - %(message)s')
+
+def format_creation_date(creation_date):
+    return creation_date.strftime('%Y%m')
+
+def encrypt_file(file_path, key):
+    fernet = Fernet(key)
+    with open(file_path, 'rb') as file:
+        original_file_data = file.read()
+    encrypted_data = fernet.encrypt(original_file_data)
+    with open(file_path, 'wb') as file:
+        file.write(encrypted_data)
+
+def create_encrypted_zip(files, archive_name, password, output_folder):
+    key = Fernet.generate_key()  # Generate a key for encryption
+    fernet = Fernet(key)
+
+    zip_path = os.path.join(output_folder, f'{archive_name}.zip')
+    with ZipFile(zip_path, 'w') as zipf:
+        for file in files:
+            zipf.write(file, os.path.basename(file))
+            logging.info(f'{os.path.basename(file)} added to {archive_name}.zip')
+
+    encrypt_file(zip_path, key)
+
+    key_file = os.path.join(output_folder, f'{archive_name}_key.txt')
+    with open(key_file, 'wb') as kf:
+        kf.write(key)
+
+    logging.info(f'Archive created: {archive_name}.zip with encryption. Key saved to {archive_name}_key.txt')
+
+
+root_folder = 'C:\\Users\\Billy\\PycharmProjects\\StorageManagement'
+client_image_folder = os.path.join(root_folder, 'clientImage')
+client_text_folder = os.path.join(root_folder, 'clientText')
+client_clean_folder = os.path.join(root_folder, 'clientClean')
+
+os.makedirs(client_clean_folder, exist_ok=True)
+
+password = 'Xavier'
+
+files_to_zip = {}
+
+for folder_name in ['clientImage', 'clientText']:
+    folder_path = os.path.join(root_folder, folder_name)
+    for filename in os.listdir(folder_path):
+        file_path = os.path.join(folder_path, filename)
+        creation_time = datetime.datetime.fromtimestamp(os.path.getctime(file_path))
+        formatted_date = format_creation_date(creation_time)
+        archive_suffix = '-img' if folder_name == 'clientImage' else '-txt'
+        archive_name = f'{formatted_date}{archive_suffix}'
+        files_to_zip.setdefault(archive_name, []).append(file_path)
+
+for archive_name, files in files_to_zip.items():
+    create_encrypted_zip(files, archive_name, password, client_clean_folder)
+
+logging.info("Archiving and encryption process is complete for all files.")
+
+#SERPATOR (decrypt (optional code to decrypt the zip files))
+
+def decrypt_and_unzip(encrypted_zip_path, key_path, output_folder):
+    # Ensure the output directory exists
+    if not os.path.exists(output_folder):
+        os.makedirs(output_folder)
+
+    # Read the key from the key file
+    with open(key_path, 'rb') as key_file:
+        key = key_file.read()
+
+    # Initialize Fernet with the key
+    fernet = Fernet(key)
+
+    # Read the encrypted zip content
+    with open(encrypted_zip_path, 'rb') as encrypted_zip_file:
+        encrypted_data = encrypted_zip_file.read()
+
+    # Decrypt the data
+    decrypted_data = fernet.decrypt(encrypted_data)
+
+    # Write the decrypted data to a temp zip file
+    temp_zip_path = encrypted_zip_path + '.tmp'
+    with open(temp_zip_path, 'wb') as temp_zip_file:
+        temp_zip_file.write(decrypted_data)
+
+    # Extract the temp zip file
+    with ZipFile(temp_zip_path, 'r') as zip_ref:
+        zip_ref.extractall(output_folder)
+
+    # Clean up the temp zip file
+    os.remove(temp_zip_path)
+
+client_clean_folder = 'clientClean'
+
+# Names of the zip and key files
+img_zip_name = '202402-img.zip'
+img_key_name = '202402-img_key.txt'
+txt_zip_name = '202402-txt.zip'
+txt_key_name = '202402-txt_key.txt'
+
+# Paths to the encrypted zip files and keys
+img_encrypted_zip_path = os.path.join(client_clean_folder, img_zip_name)
+img_key_path = os.path.join(client_clean_folder, img_key_name)
+txt_encrypted_zip_path = os.path.join(client_clean_folder, txt_zip_name)
+txt_key_path = os.path.join(client_clean_folder, txt_key_name)
+
+# Output folders for decrypted content
+img_output_folder = os.path.join(client_clean_folder, 'img_decrypt')
+txt_output_folder = os.path.join(client_clean_folder, 'txt_decrypt')
+
+# Decrypt and unzip image and text files separately
+decrypt_and_unzip(img_encrypted_zip_path, img_key_path, img_output_folder)
+decrypt_and_unzip(txt_encrypted_zip_path, txt_key_path, txt_output_folder)
+
+print("Decryption and extraction process is complete.")
+
+#SEPERATOR (download)
+
+log_file_path = os.path.join(os.getcwd(), 'summary.txt')
+logging.basicConfig(filename=log_file_path, level=logging.INFO,
+                    format='%(asctime)s - xavier - %(levelname)s - %(message)s')
+
+# FTP server credentials
+ftp_host = '127.0.0.1'
+ftp_user = 'ftp-admin'
+ftp_passwd = 'admin'
+remote_folder = 'serverClean'  # The remote folder to create
+local_zip_folder = os.path.join(os.getcwd(), 'clientClean')  # Local folder with zip files
+
+# Function to create a directory on the FTP server
+def create_directory(ftp, directory):
+    try:
+        ftp.mkd(directory)
+        logging.info(f"Created directory: {directory}")
+    except error_perm as e:
+        # Check the exact response code
+        response_code = str(e).split(None, 1)[0]
+        if response_code == '550':
+            logging.info(f"Directory already exists: {directory}")
+        else:
+            logging.error(f"Error creating directory {directory}: {e}")
+
+# Function to upload zip files to the FTP server
+def upload_files(ftp):
+    try:
+        ftp.cwd(remote_folder)
+    except error_perm as e:
+        logging.error(f"Could not change to directory {remote_folder}: {e}")
+        return
+
+    for filename in os.listdir(local_zip_folder):
+        if filename.endswith('.zip'):
+            local_path = os.path.join(local_zip_folder, filename)
+            with open(local_path, 'rb') as file:
+                ftp.storbinary(f'STOR {filename}', file)
+                logging.info(f"Uploaded file: {filename}")
+
+# Main function to handle FTP operations
+def main():
+    try:
+        with FTP(ftp_host) as ftp:
+            ftp.login(ftp_user, ftp_passwd)
+            logging.info(f"Current working directory: {ftp.pwd()}")
+            create_directory(ftp, remote_folder)
+            upload_files(ftp)
+            logging.info("File upload completed successfully.")
+    except Exception as e:
+        logging.error(f"FTP error: {e}")
+
+# Attempt to connect to the FTP server and perform operations
+main()
+
+# If the first attempt failed, wait 5 seconds and try again
+if 'FTP error' in open(log_file_path).read():
+    sleep(5)
+    logging.info("Attempting to reconnect and upload files after 5 seconds...")
+    main()
+
+SEPERATOR (record activities)
+
+source_file_name = 'summary.txt'
+source_file_path = os.path.join(os.getcwd(), source_file_name)
+
+current_time = datetime.now().strftime('%Y%m%d_%H%M%S')
+destination_file_name = f"{current_time}_xavier.log"
+destination_file_path = os.path.join(os.getcwd(), destination_file_name)
+
+try:
+    with open(source_file_path, 'r') as source_file:
+        content = source_file.read()
+
+    with open(destination_file_path, 'w') as destination_file:
+        destination_file.write(content)
+
+    print(f"Contents copied from {source_file_name} to {destination_file_name}.")
+except Exception as e:
+    print(f"Error occurred: {e}")
