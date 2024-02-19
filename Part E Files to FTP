@@ -1,0 +1,59 @@
+log_file_path = os.path.join(os.getcwd(), 'summary.txt')
+logging.basicConfig(filename=log_file_path, level=logging.INFO,
+                    format='%(asctime)s - xavier - %(levelname)s - %(message)s')
+
+# FTP server credentials
+ftp_host = '127.0.0.1'
+ftp_user = 'ftp-admin'
+ftp_passwd = 'admin'
+remote_folder = 'serverClean'  # The remote folder to create
+local_zip_folder = os.path.join(os.getcwd(), 'clientClean')  # Local folder with zip files
+
+# Function to create a directory on the FTP server
+def create_directory(ftp, directory):
+    try:
+        ftp.mkd(directory)
+        logging.info(f"Created directory: {directory}")
+    except error_perm as e:
+        # Check the exact response code
+        response_code = str(e).split(None, 1)[0]
+        if response_code == '550':
+            logging.info(f"Directory already exists: {directory}")
+        else:
+            logging.error(f"Error creating directory {directory}: {e}")
+
+# Function to upload zip files to the FTP server
+def upload_files(ftp):
+    try:
+        ftp.cwd(remote_folder)
+    except error_perm as e:
+        logging.error(f"Could not change to directory {remote_folder}: {e}")
+        return
+
+    for filename in os.listdir(local_zip_folder):
+        if filename.endswith('.zip'):
+            local_path = os.path.join(local_zip_folder, filename)
+            with open(local_path, 'rb') as file:
+                ftp.storbinary(f'STOR {filename}', file)
+                logging.info(f"Uploaded file: {filename}")
+
+# Main function to handle FTP operations
+def main():
+    try:
+        with FTP(ftp_host) as ftp:
+            ftp.login(ftp_user, ftp_passwd)
+            logging.info(f"Current working directory: {ftp.pwd()}")
+            create_directory(ftp, remote_folder)
+            upload_files(ftp)
+            logging.info("File upload completed successfully.")
+    except Exception as e:
+        logging.error(f"FTP error: {e}")
+
+# Attempt to connect to the FTP server and perform operations
+main()
+
+# If the first attempt failed, wait 5 seconds and try again
+if 'FTP error' in open(log_file_path).read():
+    sleep(5)
+    logging.info("Attempting to reconnect and upload files after 5 seconds...")
+    main()
