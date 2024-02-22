@@ -1,0 +1,27 @@
+# =============================================================================
+# Section F - Test Task Scheduler (Start of CTRL + / here)
+# =============================================================================
+
+import datetime
+
+current_datetime = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
+
+username = 'xavier'
+
+log_filename = "Task_Scheduler.log"
+
+logging.basicConfig(filename=log_filename,
+                    level=logging.INFO,
+                    format='%(asctime)s, xavier - INFO - %(message)s',
+                    datefmt='%Y-%m-%d %H:%M:%S')
+
+activities = [
+    'Task Scheduler ran successfully'
+]
+
+for activity in activities:
+    logging.info(activity)
+
+# =============================================================================
+# End of Section F (End of CTRL + / here)
+# =============================================================================
