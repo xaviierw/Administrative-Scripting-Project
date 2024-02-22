@@ -1,0 +1,40 @@
+# Administrative Scripting Project
+
+## Module Title
+Administrative Scripting
+
+## Module Code
+SN53002FP
+
+## Assignment Scope
+Develop a script to automate system job and to harden the system.
+
+## Objectives
+The project is designed to test various administrative scripting tasks including:
+1. Retrieving and sorting system information.
+2. Exception handling for script errors.
+3. Pattern matching for virus detection in log files.
+4. Data protection in information stores.
+5. Synchronization of multiple system jobs.
+6. Task scheduling for system jobs.
+7. Configuration of task schedulers.
+
+##  Tools & Equipment
+1. Personal Computer.
+2. Windows 10 or later.
+3. Python 3.9 and above.
+4. PyCharm Community Editor 2019 or equivalent.
+
+## Scenario
+A cloud hosting company providing file storage services for users to upload and download files requires a script to automate maintenance tasks. The maintenance tasks include:
+
+1. Downloading all files from the FTP or equivalent server to a local system.
+2. Separating images and text-related files into different folders.
+3. Identifying files with virus patterns and isolating them.
+4. Archiving files by type and creation date.
+5. Health check of FTP server and uploading files if the server is healthy.
+6. Logging the completion of tasks.
+
+##Contributors:
+Xavier - contactxavierwong@gmail.com
+[GitHub] - https://github.com/xaviierw
