@@ -110,7 +110,7 @@ except Exception as e:
 
 # =============================================================================
 # Section A Part 2 - Sorting files based on extensions (Start of CTRL + / here)
-#   SETUP: Logging configuration
+#  SETUP: Logging configuration
 # =============================================================================
 
 log_file_path = os.path.join(os.getcwd(), 'summary.txt')
@@ -192,10 +192,10 @@ for file, _ in virus_files:
 # End of Section B (End of CTRL + / here)
 # =============================================================================
 
-=============================================================================
-Section C - Encrypting and zipping of files (Start of CTRL + / here)
-  SETUP: Logging configuration
-=============================================================================
+# =============================================================================
+# Section C - Encrypting and zipping of files (Start of CTRL + / here)
+#  SETUP: Logging configuration
+# =============================================================================
 
 import datetime
 
@@ -281,48 +281,8 @@ for archive_name, files in files_to_zip.items():
 # Log that the entire archiving and encryption process is complete
 logging.info("Archiving and encryption process is complete for all files.")
 
-=============================================================================
-End of Section C (End of CTRL + / here)
-=============================================================================
-
-=============================================================================
-Section C - Decrypting (OPTIONAL) (Start of CTRL + / here)
-=============================================================================
-
-def decrypt_zip(encrypted_zip_path, password, output_folder):
-    # Make sure the output directory exists
-    os.makedirs(output_folder, exist_ok=True)
-
-    # Open the encrypted zip file
-    with pyzipper.AESZipFile(encrypted_zip_path) as zf:
-        # Set the password for decryption
-        zf.setpassword(password.encode('utf-8'))
-
-        # Extract all the contents to the output folder
-        zf.extractall(output_folder)
-        print(f"Extracted {encrypted_zip_path} to {output_folder}")
-
-
-# Set the password to the known decryption password
-password = 'Xavier'
-
-# Specify the root directory where the encrypted zip files are located
-root_folder = os.getcwd()
-client_encrypt_folder = os.path.join(root_folder, 'clientClean')
-
-# Specify the output directory for decrypted files
-client_decrypt_folder = os.path.join(root_folder, 'clientDecrypt')
-
-# Loop over all zip files in the encrypted folder
-for zip_filename in os.listdir(client_encrypt_folder):
-    if zip_filename.endswith('.zip'):
-        # Get the full path to the encrypted zip file
-        encrypted_zip_path = os.path.join(client_encrypt_folder, zip_filename)
-        # Call the decrypt function
-        decrypt_zip(encrypted_zip_path, password, client_decrypt_folder)
-
 # =============================================================================
-# End of Section C (OPTIONAL) (End of CTRL + / here)
+# End of Section C (End of CTRL + / here)
 # =============================================================================
 
 # =============================================================================
@@ -444,4 +404,72 @@ for activity in activities:
 
 # =============================================================================
 # End of Section E (End of CTRL + / here)
+# =============================================================================
+
+# =============================================================================
+# Decrypting (OPTIONAL) (Start of CTRL + / here)
+# =============================================================================
+
+def decrypt_zip(encrypted_zip_path, password, output_folder):
+    # Make sure the output directory exists
+    os.makedirs(output_folder, exist_ok=True)
+
+    # Open the encrypted zip file
+    with pyzipper.AESZipFile(encrypted_zip_path) as zf:
+        # Set the password for decryption
+        zf.setpassword(password.encode('utf-8'))
+
+        # Extract all the contents to the output folder
+        zf.extractall(output_folder)
+        print(f"Extracted {encrypted_zip_path} to {output_folder}")
+
+
+# Set the password to the known decryption password
+password = 'Xavier'
+
+# Specify the root directory where the encrypted zip files are located
+root_folder = os.getcwd()
+client_encrypt_folder = os.path.join(root_folder, 'clientClean')
+
+# Specify the output directory for decrypted files
+client_decrypt_folder = os.path.join(root_folder, 'clientDecrypt')
+
+# Loop over all zip files in the encrypted folder
+for zip_filename in os.listdir(client_encrypt_folder):
+    if zip_filename.endswith('.zip'):
+        # Get the full path to the encrypted zip file
+        encrypted_zip_path = os.path.join(client_encrypt_folder, zip_filename)
+        # Call the decrypt function
+        decrypt_zip(encrypted_zip_path, password, client_decrypt_folder)
+
+# =============================================================================
+# End of Section (OPTIONAL) (End of CTRL + / here)
+# =============================================================================
+
+# =============================================================================
+# Section F - Test Task Scheduler (Start of CTRL + / here)
+# =============================================================================
+
+import datetime
+
+current_datetime = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
+
+username = 'xavier'
+
+log_filename = "Task_Scheduler.log"
+
+logging.basicConfig(filename=log_filename,
+                    level=logging.INFO,
+                    format='%(asctime)s, xavier - INFO - %(message)s',
+                    datefmt='%Y-%m-%d %H:%M:%S')
+
+activities = [
+    'Task Scheduler ran successfully'
+]
+
+for activity in activities:
+    logging.info(activity)
+
+# =============================================================================
+# End of Section F (End of CTRL + / here)
 # =============================================================================
