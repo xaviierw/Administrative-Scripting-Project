@@ -1,8 +1,3 @@
-# =============================================================================
-# Section D - Script error handling (Start of CTRL + / here)
-# =============================================================================
-
-# Configure logging to write messages to 'summary.txt' in the current working directory
 log_file_path = os.path.join(os.getcwd(), 'summary.txt')
 logging.basicConfig(filename=log_file_path, level=logging.INFO,
                     format='%(asctime)s - %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
@@ -14,6 +9,18 @@ ftp_passwd = 'admin'  # The password for the FTP account
 remote_folder = '/resource/serverClean'  # The remote folder to create on the FTP server
 local_zip_folder = os.path.join(os.getcwd(), 'clientClean')  # Local folder with zip files
 
+def test_ftp_connection(host, retries=2, delay=5):
+    while retries > 0:
+        try:
+            with FTP(host) as ftp:
+                return ftp
+        except Exception as e:
+            logging.error(f"Server unavailable for file upload: {e}")
+            retries -= 1
+            if retries > 0:
+                logging.info(f"Retrying in {delay} seconds...")
+                time.sleep(delay)
+    return None
 
 # Function to create a directory on the FTP server
 def create_directory(ftp, directory):
@@ -43,30 +50,14 @@ def upload_files(ftp):
                 ftp.storbinary(f'STOR {filename}', file)
                 logging.info(f"Uploaded file: {filename}")
 
-
-# Function to test the connectivity of the FTP server
-def test_ftp_connection(host, retries=2, delay=5):
-    while retries > 0:
-        try:
-            with FTP(host) as ftp:
-                logging.info("FTP server is reachable.")
-                return ftp
-        except Exception as e:
-            logging.error(f"Server unavailable for file upload: {e}")
-            retries -= 1
-            if retries > 0:
-                logging.info(f"Retrying in {delay} seconds...")
-                time.sleep(delay)
-    return None
-
-
+# Main function to handle FTP operations
 # Main function to handle FTP operations
 def main():
     ftp = test_ftp_connection(ftp_host)
     if ftp is not None:
         try:
             ftp = FTP()
-            ftp.connect(host=ftp_host, port=22)
+            ftp.connect(host=ftp_host, port=22)  # Assuming you have a specific reason to use port 22
             ftp.login(ftp_user, ftp_passwd)
             logging.info(f"Logged in to FTP server. Current working directory: {ftp.pwd()}")
             create_directory(ftp, remote_folder)
@@ -75,13 +66,16 @@ def main():
         except Exception as e:
             logging.error(f"FTP error: {e}")
         finally:
-            ftp.quit()
+            if ftp is not None:  # Check if the ftp object is not None before calling quit
+                try:
+                    ftp.quit()
+                except Exception as e:
+                    logging.error(f"Error closing FTP connection: {e}")
+    else:
+        logging.error("FTP connection failed. No operations were performed.")
+
 
 
 # Run the main function
 if __name__ == "__main__":
     main()
-
-# =============================================================================
-# End of Section D (End of CTRL + / here)
-# =============================================================================
